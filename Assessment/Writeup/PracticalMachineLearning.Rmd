@@ -1,0 +1,131 @@
+---
+title: "PracticalMachineLearning"
+author: "SivaguruB"
+date: "October 24, 2015"
+output: pdf_document
+---
+#Practical Machine Learning - Prediction Assignment 
+This document describe the analysis done for the prediction assignment of the practical machine learning course provided by the Coursera.The first part is the declaration of the package which will be used. In addition to caret & randomForest I used "Hmisc: to help me on the data analysis phases & foreach & doParallel to decrease the random forrest processing time by parallelising the operation.For prodlem reproducing concern, I also set the seed value.
+
+<<<<<<< HEAD
+##Required Libraries
+```{r}
+options(warn=-1)
+=======
+
+#Practical Machine Learning
+
+##Prediction Assignment Writeup
+
+For this assignment I made use of the provided data from the Coursera to provide the required consistent results.
+
+library(Hmisc)
+>>>>>>> origin/master
+library(caret)
+library(randomForest)
+library(Hmisc)
+library(foreach)
+library(doParallel)
+<<<<<<< HEAD
+set.seed(4356)
+```
+The first step is to load the csv file data to dataframe and analyze the type & the completion rate of the data:
+=======
+set.seed(2048)
+options(warn=-1)
+
+I loaded the data both from the provided training and testing data in which some values contained a "#DIV/0!" which are replaced with an NA value.
+
+```{r}
+training_data <- read.csv("pml-training.csv", na.strings=c("#DIV/0!") )
+evaluation_data <- read.csv("pml-testing.csv", na.strings=c("#DIV/0!") )
+```
+
+I also casted all columns 8 to the end to be numeric.
+>>>>>>> origin/master
+```{r}
+data <- read.csv("pml-training.csv")
+summary(data)
+describe(data)
+sapply(data, class)
+str(data)
+```
+
+To manage the first issue we need to reimport data ignoring "#DIV/0!" values and force the cast to numeric values for the specified columns :
+```{r}
+data <- read.csv("pml-training.csv", na.strings=c("#DIV/0!") )
+ cData <- data
+for(i in c(8:ncol(cData)-1)) {cData[,i] = as.numeric(as.character(cData[,i]))}
+```
+<<<<<<< HEAD
+The Feature set holds only completed values for better prediction
+=======
+The Future set holds only completed values for better prediction
+>>>>>>> origin/master
+
+Determine and display out feature set.
+
+```{r}
+featuresnames <- colnames(cData[colSums(is.na(cData)) == 0])[-(1:7)]
+features <- cData[featuresnames]
+```
+<<<<<<< HEAD
+Now we gonna split the dataset into two: One for training and another for testing
+=======
+We now have the model data built from our feature set.
+
+>>>>>>> origin/master
+```{r}
+xdata <- createDataPartition(y=features$classe, p=3/4, list=FALSE )
+training <- features[xdata,]
+testing <- features[-xdata,]
+```
+<<<<<<< HEAD
+Now I am gonna build 4 random forests with 150 trees each with the use of parallel processing to build this model.
+=======
+Now I am gonna build 5 random forests with 150 trees each with the use of parallel processing to build this model.
+>>>>>>> origin/master
+```{r}
+registerDoParallel()
+model <- foreach(ntree=rep(150, 4), .combine=randomForest::combine, .packages='randomForest') %dopar% randomForest(training[-ncol(training)], training$classe, ntree=ntree)
+```
+Provide error reports for both training and test data:
+```{r}
+<<<<<<< HEAD
+predictionsTr <- predict(model, newdata=training)
+confusionMatrix(predictionsTr,training$classe)
+
+
+predictionsTe <- predict(model, newdata=testing)
+confusionMatrix(predictionsTe,testing$classe)
+```
+##Conclusion
+ The result of the confusionmatrix shows us the model is good and efficient because it has an accuracy of 0.997 and very good sensitivity & specificity values on the testing dataset. (the lowest value is 0.992 for the sensitivity of the class C)
+
+=======
+predictions1 <- predict(rf, newdata=training)
+confusionMatrix(predictions1,training$classe)##training error 
+
+
+predictions2 <- predict(rf, newdata=testing)
+confusionMatrix(predictions2,testing$classe)##testing error
+```
+##Test Data Submit
+
+
+```{r}
+pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_id_",i,".txt")
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
+
+
+x <- evaluation_data
+x <- x[feature_set[feature_set!='classe']]
+answers <- predict(rf, newdata=x)
+pml_write_files(answers)
+```
+>>>>>>> origin/master
