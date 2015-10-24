@@ -68,11 +68,15 @@ img {
 </div>
 
 
-<div id="practical-machine-learning---prediction-assignment" class="section level1">
-<h1>Practical Machine Learning - Prediction Assignment</h1>
-<p>This document describe the analysis done for the prediction assignment of the practical machine learning course provided by the Coursera.The first part is the declaration of the package which will be used. In addition to caret &amp; randomForest I used “Hmisc: to help me on the data analysis phases &amp; foreach &amp; doParallel to decrease the random forrest processing time by parallelising the operation.For prodlem reproducing concern, I also set the seed value.</p>
+<div id="practical-machine-learning" class="section level2">
+<h2>Practical Machine Learning</h2>
+</div>
+<div id="prediction-assignment-writeup" class="section level1">
+<h1>Prediction Assignment Writeup</h1>
+<p>This document describe the analysis done for the prediction assignment of the practical machine learning course.</p>
 <div id="required-libraries" class="section level2">
 <h2>Required Libraries</h2>
+<p>The packages used in the analysis are as follows:</p>
 <pre class="r"><code>options(warn=-1)
 library(caret)</code></pre>
 <pre><code>## Loading required package: lattice
@@ -107,7 +111,7 @@ library(doParallel)</code></pre>
 <pre><code>## Loading required package: iterators
 ## Loading required package: parallel</code></pre>
 <pre class="r"><code>set.seed(4356)</code></pre>
-<p>The first step is to load the csv file data to dataframe and analyze the type &amp; the completion rate of the data:</p>
+<p>The first step is to load the csv file data to dataframe and analyze the type &amp; the completion rate of the data.</p>
 <pre class="r"><code>data &lt;- read.csv(&quot;pml-training.csv&quot;)
 summary(data)</code></pre>
 <pre><code>##        X            user_name    raw_timestamp_part_1 raw_timestamp_part_2
@@ -2009,22 +2013,25 @@ summary(data)</code></pre>
 ##  $ min_yaw_dumbbell        : Factor w/ 73 levels &quot;&quot;,&quot;-0.1&quot;,&quot;-0.2&quot;,..: 1 1 1 1 1 1 1 1 1 1 ...
 ##  $ amplitude_roll_dumbbell : num  NA NA NA NA NA NA NA NA NA NA ...
 ##   [list output truncated]</code></pre>
-<p>To manage the first issue we need to reimport data ignoring “#DIV/0!” values and force the cast to numeric values for the specified columns :</p>
-<pre class="r"><code>data &lt;- read.csv(&quot;pml-training.csv&quot;, na.strings=c(&quot;#DIV/0!&quot;) )
- cData &lt;- data
+</div>
+<div id="reading-the-data" class="section level2">
+<h2>Reading the data</h2>
+<p>Read the training data into R, identifying “NA”, “” and “#DIV/0!” as NA strings</p>
+<pre class="r"><code>data &lt;- read.csv(&quot;pml-training.csv&quot;, na.strings=c(&quot;#DIV/0!&quot;) )</code></pre>
+<p>And force the cast to numeric values for the specified columns</p>
+<pre class="r"><code>cData &lt;- data
 for(i in c(8:ncol(cData)-1)) {cData[,i] = as.numeric(as.character(cData[,i]))}</code></pre>
-<p>The Feature set holds only completed values for better prediction</p>
-<p>Determine and display out feature set.</p>
+<p>To manage the second issue we will select as feature only the column with a 100% completion rate We will also eliminate some features like “X”“, timestamps,”new_window&quot; and “num_window”.</p>
 <pre class="r"><code>featuresnames &lt;- colnames(cData[colSums(is.na(cData)) == 0])[-(1:7)]
 features &lt;- cData[featuresnames]</code></pre>
-<p>Now we gonna split the dataset into two: One for training and another for testing</p>
+<p>Spliting the data into training and test sets</p>
 <pre class="r"><code>xdata &lt;- createDataPartition(y=features$classe, p=3/4, list=FALSE )
 training &lt;- features[xdata,]
 testing &lt;- features[-xdata,]</code></pre>
-<p>Now I am gonna build 4 random forests with 150 trees each with the use of parallel processing to build this model.</p>
+<p>Now we gonna process 4 random forest with 150 trees each and combine then to have a random forest model with a total of 600 trees.</p>
 <pre class="r"><code>registerDoParallel()
 model &lt;- foreach(ntree=rep(150, 4), .combine=randomForest::combine, .packages='randomForest') %dopar% randomForest(training[-ncol(training)], training$classe, ntree=ntree)</code></pre>
-<p>Provide error reports for both training and test data:</p>
+<p>To evaluate the model we will use the confusionmatrix method and we will focus on accuracy, sensitivity &amp; specificity metrics :</p>
 <pre class="r"><code>predictionsTr &lt;- predict(model, newdata=training)
 confusionMatrix(predictionsTr,training$classe)</code></pre>
 <pre><code>## Confusion Matrix and Statistics
@@ -2065,10 +2072,10 @@ confusionMatrix(predictionsTe,testing$classe)</code></pre>
 ##           Reference
 ## Prediction    A    B    C    D    E
 ##          A 1395    1    0    0    0
-##          B    0  945    6    0    0
-##          C    0    3  848    6    1
-##          D    0    0    1  798    1
-##          E    0    0    0    0  899
+##          B    0  945    7    0    0
+##          C    0    3  848    5    1
+##          D    0    0    0  799    2
+##          E    0    0    0    0  898
 ## 
 ## Overall Statistics
 ##                                          
@@ -2083,18 +2090,18 @@ confusionMatrix(predictionsTe,testing$classe)</code></pre>
 ## Statistics by Class:
 ## 
 ##                      Class: A Class: B Class: C Class: D Class: E
-## Sensitivity            1.0000   0.9958   0.9918   0.9925   0.9978
-## Specificity            0.9997   0.9985   0.9975   0.9995   1.0000
-## Pos Pred Value         0.9993   0.9937   0.9883   0.9975   1.0000
-## Neg Pred Value         1.0000   0.9990   0.9983   0.9985   0.9995
+## Sensitivity            1.0000   0.9958   0.9918   0.9938   0.9967
+## Specificity            0.9997   0.9982   0.9978   0.9995   1.0000
+## Pos Pred Value         0.9993   0.9926   0.9895   0.9975   1.0000
+## Neg Pred Value         1.0000   0.9990   0.9983   0.9988   0.9993
 ## Prevalence             0.2845   0.1935   0.1743   0.1639   0.1837
-## Detection Rate         0.2845   0.1927   0.1729   0.1627   0.1833
-## Detection Prevalence   0.2847   0.1939   0.1750   0.1631   0.1833
-## Balanced Accuracy      0.9999   0.9971   0.9947   0.9960   0.9989</code></pre>
+## Detection Rate         0.2845   0.1927   0.1729   0.1629   0.1831
+## Detection Prevalence   0.2847   0.1941   0.1748   0.1633   0.1831
+## Balanced Accuracy      0.9999   0.9970   0.9948   0.9966   0.9983</code></pre>
 </div>
 <div id="conclusion" class="section level2">
 <h2>Conclusion</h2>
-<p>The result of the confusionmatrix shows us the model is good and efficient because it has an accuracy of 0.997 and very good sensitivity &amp; specificity values on the testing dataset. (the lowest value is 0.992 for the sensitivity of the class C)</p>
+<p>As seen by the result of the confusionmatrix, the model is good and efficient because it has an accuracy of 0.997 and very good sensitivity &amp; specificity values on the testing dataset.Also i accumulated 20/20 in Coursera Assignment Submission which proves it efficiency.</p>
 </div>
 </div>
 
